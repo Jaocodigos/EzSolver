@@ -67,7 +67,7 @@ No Windows (PowerShell): `$env:CHROME_PATH="..."`.
 Fazendo requisições para o serviço:
 
 ```bash
-curl -s -X POST http://127.0.0.1:8191/solve \
+curl -s -X POST http://127.0.0.1:9000/solve \
   -H "Content-Type: application/json" \
   -d '{"sitekey":"3x00000000000000000000FF","siteurl":"http://127.0.0.1:5000"}'
 ```

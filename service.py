@@ -22,9 +22,11 @@ from http.server import BaseHTTPRequestHandler, HTTPServer
 from socketserver import ThreadingMixIn
 from typing import Optional
 import json
+from dotenv import load_dotenv
 
 from solver import solve
 
+load_dotenv()
 
 PORT = int(os.environ.get("PORT", 8191))
 # How many Chrome instances to run in parallel.

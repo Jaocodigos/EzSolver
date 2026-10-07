@@ -6,15 +6,20 @@ import random
 import subprocess
 import time
 from typing import Optional
-"""
-MADE BY ISMOILOFF. GOOD LUCK HAVE FUN, THIS IS JUST PROJECT, USE IT ON UR OWN RISKS!
+from dotenv import load_dotenv
 
-"""
+load_dotenv()
+
 import nodriver as uc
 
 
+
+# Maybe we can remove this
 def _find_chrome() -> str:
     """Return the Chrome executable path, checking common locations per OS."""
+
+    print(f"CHROME_PATH ENV: {os.environ.get('CHROME_PATH')}")
+
     if os.environ.get("CHROME_PATH"):
         return os.environ["CHROME_PATH"]
 
@@ -70,7 +75,7 @@ def _start_xvfb_if_needed() -> Optional[subprocess.Popen]:
 
 async def _solve(sitekey: str, siteurl: str, timeout: int) -> str:
     browser = await uc.start(
-        browser_executable_path=_find_chrome(),
+        browser_executable_path=r"C:\Program Files (x86)\Microsoft\Edge\Application\msedge.exe",
         headless=False,
         user_data_dir=_get_profile_dir(),
     )
