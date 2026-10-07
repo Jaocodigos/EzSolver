@@ -1,0 +1,108 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Teste Cloudflare Turnstile</title>
+  <script src="https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit" async defer></script>
+  <style>
+    :root { color-scheme: light dark; }
+    body { font-family: system-ui, sans-serif; max-width: 640px; margin: 2rem auto; padding: 0 1rem; line-height: 1.5; }
+    h1 { font-size: 1.4rem; }
+    label { display: block; margin: 1rem 0 .25rem; font-weight: 600; }
+    select, button { font: inherit; padding: .5rem; width: 100%; box-sizing: border-box; }
+    button { margin-top: 1rem; cursor: pointer; }
+    button:disabled { opacity: .5; cursor: not-allowed; }
+    #widget { margin-top: 1rem; min-height: 65px; }
+    pre { background: rgba(127,127,127,.15); padding: .75rem; border-radius: 6px; overflow: auto; white-space: pre-wrap; word-break: break-all; }
+    .ok { color: #16a34a; } .err { color: #dc2626; }
+    small { opacity: .7; }
+  </style>
+</head>
+<body>
+  <h1>Teste do Cloudflare Turnstile</h1>
+  <p><small>Chaves de teste oficiais da Cloudflare. A sitekey e a secret key de teste devem ser combinadas para o resultado esperado (veja o README).</small></p>
+
+  <label for="sitekey">Sitekey (widget)</label>
+  <select id="sitekey">
+    {% for key, desc in sitekeys.items() %}
+      <option value="{{ key }}">{{ desc }} — {{ key }}</option>
+    {% endfor %}
+    {% if real_sitekey %}
+      <option value="{{ real_sitekey }}">Sitekey real (variável de ambiente)</option>
+    {% endif %}
+  </select>
+
+  <label for="secret">Secret key (servidor)</label>
+  <select id="secret">
+    {% for key, desc in secrets.items() %}
+      <option value="{{ key }}">{{ desc }}</option>
+    {% endfor %}
+    {% if has_real_secret %}
+      <option value="real">Secret real (variável de ambiente)</option>
+    {% endif %}
+  </select>
+
+  <div id="widget"></div>
+
+  <label>Token gerado</label>
+  <pre id="token">(aguardando o widget...)</pre>
+
+  <button id="submit" disabled>Enviar para validação</button>
+  <button id="reset" type="button">Recarregar widget</button>
+
+  <label>Resposta do servidor</label>
+  <pre id="result">—</pre>
+
+  <script>
+    const $ = (id) => document.getElementById(id);
+    let widgetId = null;
+    let currentToken = null;
+
+    function setToken(t) {
+      currentToken = t;
+      $("token").textContent = t || "(sem token)";
+      $("submit").disabled = !t;
+    }
+
+    function renderWidget() {
+      if (!window.turnstile) { setTimeout(renderWidget, 150); return; }
+      if (widgetId !== null) { turnstile.remove(widgetId); widgetId = null; }
+      setToken(null);
+      $("token").textContent = "(aguardando o widget...)";
+      widgetId = turnstile.render("#widget", {
+        sitekey: $("sitekey").value,
+        callback: setToken,
+        "expired-callback": () => setToken(null),
+        "error-callback": (code) => { setToken(null); $("token").textContent = "Erro no widget: " + code; },
+      });
+    }
+
+    $("sitekey").addEventListener("change", renderWidget);
+    $("reset").addEventListener("click", renderWidget);
+
+    $("submit").addEventListener("click", async () => {
+      $("result").textContent = "Validando...";
+      $("result").className = "";
+      try {
+        const res = await fetch("/verify", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ token: currentToken, secret: $("secret").value }),
+        });
+        const data = await res.json();
+        $("result").className = data.ok ? "ok" : "err";
+        $("result").textContent = (data.ok ? "✔ Validado\n" : "✘ Falhou\n") + JSON.stringify(data, null, 2);
+      } catch (e) {
+        $("result").className = "err";
+        $("result").textContent = "Erro: " + e;
+      }
+      // Cada token só pode ser validado uma vez: gera um novo.
+      if (window.turnstile && widgetId !== null) turnstile.reset(widgetId);
+      setToken(null);
+    });
+
+    renderWidget();
+  </script>
+</body>
+</html>
